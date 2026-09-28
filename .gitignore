@@ -1,0 +1,10 @@
+# Fichiers de build générés par la compilation AVR
+build/
+*.elf
+*.hex
+*.o
+
+# Fichiers éditeurs & OS
+.vscode/
+.idea/
+.DS_Store
