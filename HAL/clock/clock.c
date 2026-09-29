@@ -8,31 +8,43 @@
 #define TARGET_TICKS      (F_CPU / F_CLOCK_REF)
 #define TOLERANCE         2U
 #define CAPTURE_TIMEOUT   50000UL
+#define CALIBRATION_SAMPLES 10U
 
 static volatile uint32_t g_system_millis = 0;
-static uint16_t g_last_measured_ticks = 0; // Stocke la dernière mesure retenue
+static uint16_t g_last_measured_ticks = 0;
 
-// Single-point measurement function exclusively for calibration
+// Measurement function averaged over multiple periods to filter out jitter
 static uint16_t measure_calibration_ticks(void) {
-    uint32_t timeout = 0;
+    uint32_t total_ticks = 0;
 
     TCCR1A = 0;
     TCCR1B = (1 << CS10) | (1 << ICES1); // Rising edge, Prescaler 1
-    TIFR1  = (1 << ICF1);
 
-    while (!(TIFR1 & (1 << ICF1))) {
-        if (++timeout > CAPTURE_TIMEOUT) return 0;
+    for (uint8_t i = 0; i < CALIBRATION_SAMPLES; i++) {
+        uint32_t timeout = 0;
+        TIFR1 = (1 << ICF1);
+
+        // Wait for first edge of the period
+        while (!(TIFR1 & (1 << ICF1))) {
+            if (++timeout > CAPTURE_TIMEOUT) return 0;
+        }
+        uint16_t t1 = ICR1;
+        TIFR1 = (1 << ICF1);
+
+        // Wait for second edge of the period
+        timeout = 0;
+        while (!(TIFR1 & (1 << ICF1))) {
+            if (++timeout > CAPTURE_TIMEOUT) return 0;
+        }
+        uint16_t t2 = ICR1;
+        TIFR1 = (1 << ICF1);
+
+        // Accumulate ticks for this period (safe for 16-bit timer)
+        total_ticks += (uint16_t)(t2 - t1);
     }
-    uint16_t t1 = ICR1;
-    TIFR1 = (1 << ICF1);
 
-    timeout = 0;
-    while (!(TIFR1 & (1 << ICF1))) {
-        if (++timeout > CAPTURE_TIMEOUT) return 0;
-    }
-    uint16_t t2 = ICR1;
-
-    return (t2 - t1);
+    // Return the average tick count per period
+    return (uint16_t)(total_ticks / CALIBRATION_SAMPLES);
 }
 
 // Calibration algorithm via dichotomy
@@ -59,7 +71,7 @@ void clock_calibrate_osccal(void) {
         if (error < min_error) {
             min_error = error;
             best_osccal = (uint8_t)mid;
-            g_last_measured_ticks = measured_ticks; // Sauvegarde la mesure associée au meilleur OSCCAL
+            g_last_measured_ticks = measured_ticks;
         }
 
         if (error <= TOLERANCE) {
@@ -81,10 +93,10 @@ void clock_init(void) {
     DDRB &= ~(1 << DDB0);
     PORTB &= ~(1 << PORTB0);
     
-    // Run calibration once
+    // Run calibration once with multi-sample averaging
     clock_calibrate_osccal();
 
-    // Configure Timer 0 for system millis (optional, but useful for delays)
+    // Configure Timer 0 for system millis
     TCNT0 = 0;
     OCR0A = (uint8_t)(((F_CPU / 64UL) / 1000UL) - 1UL);
     TCCR0A = (1 << WGM01);
