@@ -6,7 +6,6 @@
 
 // Default reference frequency definition if not provided by Makefile
 #ifndef F_CLOCK_REF
-#define F_CLOCK_REF 1000UL
 #endif
 
 // Initializes clocks: runs dichotomy calibration once using F_CLOCK_REF, sets OSCCAL, and configures Timer 0 for system millis.
