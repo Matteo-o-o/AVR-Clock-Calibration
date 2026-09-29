@@ -10,6 +10,7 @@
 #define CAPTURE_TIMEOUT   50000UL
 
 static volatile uint32_t g_system_millis = 0;
+static uint16_t g_last_measured_ticks = 0; // Stocke la dernière mesure retenue
 
 // Single-point measurement function exclusively for calibration
 static uint16_t measure_calibration_ticks(void) {
@@ -58,6 +59,7 @@ void clock_calibrate_osccal(void) {
         if (error < min_error) {
             min_error = error;
             best_osccal = (uint8_t)mid;
+            g_last_measured_ticks = measured_ticks; // Sauvegarde la mesure associée au meilleur OSCCAL
         }
 
         if (error <= TOLERANCE) {
@@ -82,7 +84,7 @@ void clock_init(void) {
     // Run calibration once
     clock_calibrate_osccal();
 
-    // Configure Timer 0 for system millis 
+    // Configure Timer 0 for system millis (optional, but useful for delays)
     TCNT0 = 0;
     OCR0A = (uint8_t)(((F_CPU / 64UL) / 1000UL) - 1UL);
     TCCR0A = (1 << WGM01);
@@ -99,6 +101,11 @@ uint32_t clock_millis(void) {
     millis_copy = g_system_millis;
     SREG = sreg;
     return millis_copy;
+}
+
+// Getter function required by main.c
+uint16_t clock_get_last_ticks(void) {
+    return g_last_measured_ticks;
 }
 
 ISR(TIMER0_COMPA_vect) {
