@@ -34,8 +34,8 @@ OBJS        := $(patsubst %.c, $(BUILD_DIR)/%.o, $(SRCS))		# Prepare the directo
 # ==============================================================================
 # COMPILER AND LINKER FLAGS
 # ==============================================================================
-# C Flags: Optimization (-Os), MCU definition, CPU frequency, All Warnings
-CFLAGS      := -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os -Wall -Wextra -std=gnu99 $(INC_FLAGS)		# Config for complilation (avr-gcc) (MCU,Freq,Opti Size,Warning,C99 Standard,Direcctory to .h)
+# C Flags: Optimization (-Os), MCU definition, CPU frequency, Reference clock frequency, All Warnings
+CFLAGS      := -mmcu=$(MCU) -DF_CPU=$(F_CPU) -DF_CLOCK_REF=$(F_CLOCK_REF) -Os -Wall -Wextra -std=gnu99 $(INC_FLAGS)
 
 # Linker Flags
 LDFLAGS     := -mmcu=$(MCU)						# Config for linker (avr-gcc)
