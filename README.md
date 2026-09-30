@@ -127,6 +127,7 @@ make flash
 
 Open a serial monitor on the USB-to-TTL adapter. The calibration runs at every boot:
 
+<img width="540" height="261" alt="Calibration clock screen r" src="https://github.com/user-attachments/assets/de13c564-4a2d-4d52-9504-400bf312e703" />
 
 
 ### 4. Clean Build Artifacts
